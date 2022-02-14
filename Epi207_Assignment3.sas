@@ -1,6 +1,6 @@
 /*******************************************************
 	filename: Epi207_Assignment3
-	author(s): Catherine Cortez, Rebecca Fischer, John Waggoner
+	author(s): Catherine Cortez, Rebecca Fisher, John Waggoner
 	created on: 2/13/2022
 	purpose: 
 ********************************************************/
