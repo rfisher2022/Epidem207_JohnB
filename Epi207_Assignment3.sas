@@ -289,3 +289,77 @@ proc freq data=asgn3.johnclean;
 
 /******************** END OF SCRIPT *********************/
 
+
+
+/******************* Table 1 ****************************/
+	*author: Catherine;
+	*date: 2 15 2022;
+
+options nodate nocenter ls = 147 ps = 47 orientation = landscape;
+
+	/*	Create macro to file path with Table 1 SAS programs - change path to 
+		where Table 1 macro files are saved locally	*/
+
+%let MacroDir=C:\Users\Catherine Cortez\Desktop\EPI 207\PLOS John et al\Assignment 1\Table1;
+
+filename tab1  "&MacroDir./Table1.sas";
+%include tab1;
+
+/***********************/
+/****UTILITY SASJOBS****/
+/***********************/
+filename tab1prt  "&MacroDir./Table1Print.sas";
+%include tab1prt;
+
+filename npar1way  "&MacroDir./Npar1way.sas";
+%include npar1way;
+
+filename CheckVar  "&MacroDir./CheckVar.sas";
+%include CheckVar;
+
+filename Uni  "&MacroDir./Univariate.sas";
+%include Uni;
+
+filename Varlist  "&MacroDir./Varlist.sas";
+%include Varlist;
+
+filename Words  "&MacroDir./Words.sas";
+%include Words;
+
+filename Append  "&MacroDir./Append.sas";
+%include Append;
+
+
+	/*	specify folder in which to store results - change path	*/
+
+%let results=C:\Users\Catherine Cortez\Desktop\EPI 207\PLOS John et al\Assignment 2\Table 1 Results;
+
+	/*	macro call - not sure how to add in right hand column with % breakdown of 
+		person time by sociodemographic group. Might need to use proc tabulate
+		and enter this data manually into excel instead?*/
+
+%Table1(DSName=asgn3.johnclean,
+        Total=C,
+		NumVars= prsn_time age_num,
+        FreqVars= sex_bin age_cat edu_cat smk_cat hlt_cat auditc_cat,
+        P=N,
+        FreqCell=N(CP),
+        Missing=Y,
+        Print=N,
+		Dec=2,
+        Label=L,
+        Out=test,
+        Out1way=)
+*options mprint  symbolgen mlogic;
+run;
+
+	/*	Generate excel file with output	*/
+
+ods excel file="&results.\John et al_Table1_output.xlsx";
+%Table1Print(DSname=test,Space=Y)
+ods excel close;
+run;
+
+/******************* End of Table 1 code ****************************/
+
+
