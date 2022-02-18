@@ -177,6 +177,9 @@ data asgn3.johnclean;
 	id_num=S;
 	prsn_time=J;
 
+	/*	Person time (years) */
+	prsn_time_yrs=prsn_time/365;
+
 	/* 	lifelong abstinence was coded in the original dataset as either 
 		'1. Ja 1.' or '5. Nein 5.' This codes the new variable as either
 		1  or 0, where 1 means yes and 0 means no (see 'yesno.' format) */
@@ -232,7 +235,8 @@ data asgn3.johnclean;
 			age_cat			=	"Age (Categorical)"
 			deceased_bin	=	"Deceased (Y/N)"
 			cod_cat			=	"Cause of Death"
-			prsn_time		=	"Person-Time (Continuous)"
+			prsn_time		=	"Person-Time (Continuous, days)"
+			prsn_time_yrs	=	"Person-Time (Continuous, years)"
 			hlt_cat			=	"Self-Reported Health"
 			auditc_cat		=	"AUDIT-C Score Sum (Categorical)"
 			smk_cat			=	"Smoking History"
@@ -245,6 +249,7 @@ data asgn3.johnclean;
 			deceased_bin		yesno.
 			age_num
 			prsn_time
+			prsn_time_yrs
 			id_num				8.
 			sex_bin				sexbin.
 			edu_cat				educat.
@@ -332,7 +337,7 @@ filename Append  "&MacroDir./Append.sas";
 
 	/*	specify folder in which to store results - change path	*/
 
-%let results=C:\Users\Catherine Cortez\Desktop\EPI 207\PLOS John et al\Assignment 2\Table 1 Results;
+%let results=C:\Users\Catherine Cortez\Desktop\EPI 207\PLOS John et al\Assignment 2\Table 1;
 
 	/*	macro call - not sure how to add in right hand column with % breakdown of 
 		person time by sociodemographic group. Might need to use proc tabulate
@@ -340,7 +345,7 @@ filename Append  "&MacroDir./Append.sas";
 
 %Table1(DSName=asgn3.johnclean,
         Total=C,
-		NumVars= prsn_time age_num,
+		NumVars= prsn_time_yrs age_num,
         FreqVars= sex_bin age_cat edu_cat smk_cat hlt_cat auditc_cat,
         P=N,
         FreqCell=N(CP),
@@ -358,6 +363,14 @@ run;
 ods excel file="&results.\John et al_Table1_output.xlsx";
 %Table1Print(DSname=test,Space=Y)
 ods excel close;
+run;
+
+	/*	Calculate values for person-year column */
+
+proc tabulate data=asgn3.johnclean;
+	class sex_bin edu_cat smk_cat hlt_cat auditc_cat;
+	var prsn_time_yrs;
+	table sex_bin edu_cat smk_cat hlt_cat auditc_cat, (mean std)*prsn_time_yrs;
 run;
 
 /******************* End of Table 1 code ****************************/
