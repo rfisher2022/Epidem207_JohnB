@@ -9,12 +9,25 @@
 
 title 'Epi207_Assignment3';
 
-/* 	CHANGE FILE NAME TO WHEREVER LOCAL FILE IS SAVED
+/* 	SET LIBNAMES, FILENAMES AND LOCATION MACRO VARIABLES:
+	CHANGE FILE NAME TO FOLDER LOCAL FILE IS SAVED
 	the download link to the actual data on PLOS is broken so 
 	until that is fixed, will have to use local files */
 
-libname asgn3 'C:\Users\John\Desktop\EPIDEM207-2022-winter\Assignment3';
-filename johnetal 'C:\Users\John\Desktop\EPIDEM207-2022-winter\Assignment3\johnetal.xls';
+libname asgn3 'C:\Users\';
+filename johnetal 'C:\Users\...\johnetal.xls';
+
+*also set up location of table 1 macro;
+%let MacroDir = C:\Users\...\Table1;
+
+*specify folder in which to store results - change path;
+
+%let results=C:\Users\...\Table 1;
+
+
+
+
+*Import raw data from xls;
 
 proc import out=asgn3.johnetalunclean datafile= johnetal
 			dbms = xls replace;
@@ -292,7 +305,7 @@ proc freq data=asgn3.johnclean;
 /* 	Compared with table 1 in John et al., frequencies of new dataset match
 	those from the article. */
 
-/******************** END OF SCRIPT *********************/
+/******************** END OF CLEANING *********************/
 
 
 
@@ -305,7 +318,6 @@ options nodate nocenter ls = 147 ps = 47 orientation = landscape;
 	/*	Create macro to file path with Table 1 SAS programs - change path to 
 		where Table 1 macro files are saved locally	*/
 
-%let MacroDir=C:\Users\Catherine Cortez\Desktop\EPI 207\PLOS John et al\Assignment 1\Table1;
 
 filename tab1  "&MacroDir./Table1.sas";
 %include tab1;
@@ -334,10 +346,6 @@ filename Words  "&MacroDir./Words.sas";
 filename Append  "&MacroDir./Append.sas";
 %include Append;
 
-
-	/*	specify folder in which to store results - change path	*/
-
-%let results=C:\Users\Catherine Cortez\Desktop\EPI 207\PLOS John et al\Assignment 2\Table 1;
 
 	/*	macro call - not sure how to add in right hand column with % breakdown of 
 		person time by sociodemographic group. Might need to use proc tabulate
@@ -376,3 +384,39 @@ run;
 /******************* End of Table 1 code ****************************/
 
 
+
+
+/******************* Table 2 ****************************/
+	*author: Rebecca;
+	*date: 2 20 2022;
+
+title "Frequency of AUDIT-C levels and Death";
+proc freq data=asgn3.johnclean;
+	table auditc_cat*deceased_bin/ nocol nopercent;
+run;
+
+*Unadjusted HR;
+title "Unadjusted Hazards of AUDIT-C levels and Death";
+
+proc phreg data=asgn3.johnclean;
+class auditc_cat(ref="Abstinent")/param=ref order=internal;
+model prsn_time_yrs*deceased_bin(0)=auditc_cat/rl;
+run;
+
+*Adjusted HR for sex, age, smoking status and years of education at baseline;
+title "djustAed Hazards of AUDIT-C levels and Death, Model 1";
+
+proc phreg data=asgn3.johnclean;
+class auditc_cat(ref="Abstinent") sex_bin(ref="Female") smk_cat(ref="Never Smoker") edu_cat(ref=">=12 years")/param=ref order=internal;
+model prsn_time_yrs*deceased_bin(0)=auditc_cat age_num sex_bin smk_cat edu_cat/rl;
+run;
+
+*Adjusted HR for sex, age, smoking status y,ears of education and self-rated health at baseline;
+title "Adjusted Hazards of AUDIT-C levels and Death, Model 2";
+
+proc phreg data=asgn3.johnclean;
+class auditc_cat(ref="Abstinent") sex_bin(ref="Female") smk_cat(ref="Never Smoker") edu_cat(ref=">=12 years") hlt_cat(ref="Excellent/Very Good")/param=ref order=internal;
+model prsn_time_yrs*deceased_bin(0)=auditc_cat age_num sex_bin smk_cat edu_cat hlt_cat/rl;
+run;
+
+/******************* End of Table 2 code ****************************/
