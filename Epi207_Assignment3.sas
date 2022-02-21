@@ -348,9 +348,7 @@ filename Append  "&MacroDir./Append.sas";
 %include Append;
 
 
-	/*	macro call - not sure how to add in right hand column with % breakdown of 
-		person time by sociodemographic group. Might need to use proc tabulate
-		and enter this data manually into excel instead?*/
+	/*	macro call */
 
 %Table1(DSName=asgn3.johnclean,
         Total=C,
