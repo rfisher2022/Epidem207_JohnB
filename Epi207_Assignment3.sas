@@ -6,7 +6,8 @@
 ********************************************************/
 
 /**********Data read-in **********************/
-
+*author: John Waggoner;
+*date: 2/13/2022;
 title 'Epi207_Assignment3';
 
 /* 	SET LIBNAMES, FILENAMES AND LOCATION MACRO VARIABLES:
