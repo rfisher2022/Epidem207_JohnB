@@ -6,6 +6,10 @@ Project description: This project includes Assignment 2 for John et al Group B f
 
 ## Features
 As of 2/20/22, this repository and folder contain:
+* SAS code for data cleaning, table 1, table 2, figures
+* Final written report
+* XLS and PNG files with tables and figures
+* Table 1 Macro files for SAS
 
 
 ## Acknowledgments
