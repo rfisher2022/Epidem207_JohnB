@@ -6,15 +6,29 @@
 ********************************************************/
 
 /**********Data read-in **********************/
-
+*author: John Waggoner;
+*date: 2/13/2022;
 title 'Epi207_Assignment3';
 
-/* 	CHANGE FILE NAME TO WHEREVER LOCAL FILE IS SAVED
+/* 	SET LIBNAMES, FILENAMES AND LOCATION MACRO VARIABLES:
+	CHANGE FILE NAME TO FOLDER LOCAL FILE IS SAVED
 	the download link to the actual data on PLOS is broken so 
 	until that is fixed, will have to use local files */
 
-libname asgn3 'C:\Users\John\Desktop\EPIDEM207-2022-winter\Assignment3';
-filename johnetal 'C:\Users\John\Desktop\EPIDEM207-2022-winter\Assignment3\johnetal.xls';
+libname asgn3 'C:\Users\...';
+filename johnetal 'C:\Users\...\johnetal.xls';
+
+*also set up location of table 1 macro;
+%let MacroDir = C:\Users\...\Table1;
+
+*specify folder in which to store results - change path;
+
+%let results=C:\Users\...\results;
+
+
+
+
+*Import raw data from xls;
 
 proc import out=asgn3.johnetalunclean datafile= johnetal
 			dbms = xls replace;
@@ -177,6 +191,9 @@ data asgn3.johnclean;
 	id_num=S;
 	prsn_time=J;
 
+	/*	Person time (years) */
+	prsn_time_yrs=prsn_time/365;
+
 	/* 	lifelong abstinence was coded in the original dataset as either 
 		'1. Ja 1.' or '5. Nein 5.' This codes the new variable as either
 		1  or 0, where 1 means yes and 0 means no (see 'yesno.' format) */
@@ -232,7 +249,8 @@ data asgn3.johnclean;
 			age_cat			=	"Age (Categorical)"
 			deceased_bin	=	"Deceased (Y/N)"
 			cod_cat			=	"Cause of Death"
-			prsn_time		=	"Person-Time (Continuous)"
+			prsn_time		=	"Person-Time (Continuous, days)"
+			prsn_time_yrs	=	"Person-Time (Continuous, years)"
 			hlt_cat			=	"Self-Reported Health"
 			auditc_cat		=	"AUDIT-C Score Sum (Categorical)"
 			smk_cat			=	"Smoking History"
@@ -245,6 +263,7 @@ data asgn3.johnclean;
 			deceased_bin		yesno.
 			age_num
 			prsn_time
+			prsn_time_yrs
 			id_num				8.
 			sex_bin				sexbin.
 			edu_cat				educat.
@@ -287,7 +306,7 @@ proc freq data=asgn3.johnclean;
 /* 	Compared with table 1 in John et al., frequencies of new dataset match
 	those from the article. */
 
-/******************** END OF SCRIPT *********************/
+/******************** END OF CLEANING *********************/
 
 
 
@@ -300,7 +319,6 @@ options nodate nocenter ls = 147 ps = 47 orientation = landscape;
 	/*	Create macro to file path with Table 1 SAS programs - change path to 
 		where Table 1 macro files are saved locally	*/
 
-%let MacroDir=C:\Users\Catherine Cortez\Desktop\EPI 207\PLOS John et al\Assignment 1\Table1;
 
 filename tab1  "&MacroDir./Table1.sas";
 %include tab1;
@@ -330,17 +348,11 @@ filename Append  "&MacroDir./Append.sas";
 %include Append;
 
 
-	/*	specify folder in which to store results - change path	*/
-
-%let results=C:\Users\Catherine Cortez\Desktop\EPI 207\PLOS John et al\Assignment 2\Table 1 Results;
-
-	/*	macro call - not sure how to add in right hand column with % breakdown of 
-		person time by sociodemographic group. Might need to use proc tabulate
-		and enter this data manually into excel instead?*/
+	/*	macro call */
 
 %Table1(DSName=asgn3.johnclean,
         Total=C,
-		NumVars= prsn_time age_num,
+		NumVars= prsn_time_yrs age_num,
         FreqVars= sex_bin age_cat edu_cat smk_cat hlt_cat auditc_cat,
         P=N,
         FreqCell=N(CP),
@@ -360,6 +372,194 @@ ods excel file="&results.\John et al_Table1_output.xlsx";
 ods excel close;
 run;
 
+	/*	Calculate values for person-year column */
+
+proc tabulate data=asgn3.johnclean;
+	class sex_bin edu_cat smk_cat hlt_cat auditc_cat;
+	var prsn_time_yrs;
+	table sex_bin edu_cat smk_cat hlt_cat auditc_cat, (mean std)*prsn_time_yrs;
+run;
+
 /******************* End of Table 1 code ****************************/
+
+
+
+
+/******************* Table 2 ****************************/
+	*author: Rebecca;
+	*date: 2 20 2022;
+
+title "Frequency of AUDIT-C levels and Death";
+proc freq data=asgn3.johnclean;
+	table auditc_cat*deceased_bin/ nocol nopercent;
+run;
+
+*Unadjusted HR;
+title "Unadjusted Hazards of AUDIT-C levels and Death";
+
+proc phreg data=asgn3.johnclean;
+class auditc_cat(ref="Abstinent")/param=ref order=internal;
+model prsn_time_yrs*deceased_bin(0)=auditc_cat/rl;
+run;
+
+*Adjusted HR for sex, age, smoking status and years of education at baseline;
+title "Adjusted Hazards of AUDIT-C levels and Death, Model 1";
+
+proc phreg data=asgn3.johnclean;
+class auditc_cat(ref="Abstinent") sex_bin(ref="Female") smk_cat(ref="Never Smoker") edu_cat(ref=">=12 years")/param=ref order=internal;
+model prsn_time_yrs*deceased_bin(0)=auditc_cat age_num sex_bin smk_cat edu_cat/rl;
+run;
+
+*Adjusted HR for sex, age, smoking status, years of education and self-rated health at baseline;
+title "Adjusted Hazards of AUDIT-C levels and Death, Model 2";
+
+proc phreg data=asgn3.johnclean;
+class auditc_cat(ref="Abstinent") sex_bin(ref="Female") smk_cat(ref="Never Smoker") edu_cat(ref=">=12 years") hlt_cat(ref="Excellent/Very Good")/param=ref order=internal;
+model prsn_time_yrs*deceased_bin(0)=auditc_cat age_num sex_bin smk_cat edu_cat hlt_cat/rl;
+run;
+
+/******************* End of Table 2 code ****************************/
+	
+
+
+
+
+/******************* Survival Graph Figures *************************/
+	*author: John Waggoner;
+	*date: 2/20/2022;
+/******************* Survival Plot Unadjusted ***********************/
+
+ods graphics on;
+
+/*Create covariate values for graphing*/
+data fig1_unadjusted;
+	format	auditc_cat	auditc.;
+	input	auditc_cat;
+	datalines;
+	0
+	1
+	2
+	3
+	4
+	5
+	;
+run;
+
+/*Figure 1 Code*/
+ods output survivalplot=_surv;
+Title "Figure 1: Survival of study participants after 20 years by baseline alcohol consumption";
+
+proc phreg 	data=asgn3.johnclean plots(overlay)=(survival);
+	class 		auditc_cat(ref="Abstinent")/param=ref order=internal;
+	model		prsn_time_yrs*deceased_bin(0)=auditc_cat/rl;
+	baseline 	covariates=fig1_unadjusted/rowid=auditc_cat;
+	where 		auditc_cat=0|auditc_cat=1|auditc_cat=2|auditc_cat=3|
+				auditc_cat=4|auditc_cat=5;
+run;
+
+proc sgplot data=_surv;
+	step x=time y=survival/group=auditc_cat;
+	keylegend/title=" ";
+run;
+
+
+/****************** Plot for:Adjusted Model 1 ********************/
+
+/*model for baseline values*/
+
+
+proc phreg data=asgn3.johnclean plots=survival;
+	class 	sex_bin(ref='Female') smk_cat(ref='Never Smoker') edu_cat(ref='>=12 years')/param=ref;
+	model 	prsn_time_yrs*deceased_bin(0)=sex_bin smk_cat edu_cat age_num;
+run;
+
+/*Covariate Baseline Dataset for Graphing*/
+data fig2_adjusted;
+	format	auditc_cat	auditc.
+			sex_bin		sexbin.
+			smk_cat		smkcat.
+			edu_cat		educat.;
+	input	auditc_cat
+			sex_bin
+			smk_cat
+			edu_cat
+			age_num;
+	datalines;
+	0 0 0 3 42
+	1 0 0 3 42
+	2 0 0 3 42
+	3 0 0 3 42
+	4 0 0 3 42
+	5 0 0 3 42
+	;
+run;
+
+/*figure 2 Code*/
+ods output survivalplot=_surv;
+Title "Figure 2: Survival of sutdy participants after 20 years by baseline alcohol consumption, adjusted for age, sex, education level, and smoking";
+
+proc phreg 	data=asgn3.johnclean plots(overlay)=(survival);
+	class 		auditc_cat(ref="Abstinent") sex_bin(ref="Female") smk_cat(ref="Never Smoker") edu_cat(ref=">=12 years")/param=ref order=internal;
+	model 		prsn_time_yrs*deceased_bin(0)=auditc_cat age_num sex_bin smk_cat edu_cat/rl;
+	baseline 	covariates=fig2_adjusted/rowid=auditc_cat;
+	where 		auditc_cat=0|auditc_cat=1|auditc_cat=2|auditc_cat=3|
+				auditc_cat=4|auditc_cat=5;
+run;
+
+proc sgplot data=_surv;
+	step x=time y=survival/group=auditc_cat;
+	keylegend/title=" ";
+run;
+
+/********************** Plot for Adjsuted Model 2 *****************/
+/* model for baseline covariate values*/
+proc phreg data=asgn3.johnclean plots=survival;
+			class sex_bin(ref='Female') smk_cat(ref='Never Smoker') edu_cat(ref='>=12 years') hlt_cat(ref='Excellent/Very Good')/param=ref order=internal;
+			model prsn_time_yrs*deceased_bin(0)= sex_bin age_num smk_cat hlt_cat edu_cat;
+run;
+
+/*Covariate baseline dataset for graphing*/
+
+data fig3_adjusted;
+	format	auditc_cat	auditc.
+			sex_bin		sexbin.
+			smk_cat		smkcat.
+			edu_cat		educat.
+			hlt_cat		hltcat.;
+	input	auditc_cat
+			sex_bin
+			smk_cat
+			edu_cat
+			age_num
+			hlt_cat;
+	datalines;
+	0 0 0 3 42 3
+	1 0 0 3 42 3
+	2 0 0 3 42 3
+	3 0 0 3 42 3
+	4 0 0 3 42 3
+	5 0 0 3 42 3
+	;
+
+/*figure 3 code*/
+ods output survivalplot=_surv;
+Title "Figure 3: Survival of sutdy participants after 20 years by baseline alcohol consumption, adjusted for age, sex, education level, smoking, and self-reported health at baseline";
+
+proc phreg 	data=asgn3.johnclean plots(overlay)=(survival);
+	class 		auditc_cat(ref="Abstinent") sex_bin(ref="Female") smk_cat(ref="Never Smoker") edu_cat(ref=">=12 years") hlt_cat(ref='Excellent/Very Good')/param=ref order=internal;
+	model 		prsn_time_yrs*deceased_bin(0)=auditc_cat age_num sex_bin smk_cat edu_cat hlt_cat/rl;
+	baseline 	covariates=fig3_adjusted/rowid=auditc_cat;
+	where 		auditc_cat=0|auditc_cat=1|auditc_cat=2|auditc_cat=3|
+				auditc_cat=4|auditc_cat=5;
+run;
+
+proc sgplot data=_surv;
+	step x=time y=survival/group=auditc_cat;
+	keylegend/title=" ";
+run;
+
+ods graphics off;
+
+/****** END FIGURE & GRAPH CODE ****************/
 
 
